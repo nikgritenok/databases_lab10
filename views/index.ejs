@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Научный Журнал</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .search-group {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input, select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #articlesList {
+            margin-top: 20px;
+        }
+        .article-item {
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .article-item:hover {
+            background-color: #f9f9f9;
+        }
+        .article-info {
+            flex-grow: 1;
+        }
+        .article-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .action-icon {
+            cursor: pointer;
+            padding: 5px;
+            color: #666;
+        }
+        .action-icon:hover {
+            color: #000;
+        }
+        .date-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 70%;
+            max-width: 600px;
+        }
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 28px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .top-article {
+            background-color: #f0f8ff;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Научный Журнал</h1>
+    
+    <div class="controls">
+        <div class="search-group">
+            <button id="listAllBtn">Список статей</button>
+            <button id="createArticleBtn">Создать статью</button>
+            <button id="topArticlesBtn">Топ статей</button>
+        </div>
+
+        <div class="search-group">
+            <input type="text" id="titleSearch" placeholder="Поиск по названию">
+            <button id="searchByTitleBtn">Поиск по названию</button>
+        </div>
+
+        <div class="search-group">
+            <select id="authorSelect">
+                <option value="">Выберите автора</option>
+            </select>
+            <button id="searchByAuthorBtn">Поиск по автору</button>
+        </div>
+
+        <div class="search-group date-picker">
+            <input type="date" id="startDate">
+            <span>до</span>
+            <input type="date" id="endDate">
+            <button id="searchByDateBtn">Поиск по дате</button>
+        </div>
+    </div>
+
+    <div id="articlesList"></div>
+
+    <!-- Модальное окно для создания статьи -->
+    <div id="createArticleModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Создать новую статью</h2>
+            <form id="createArticleForm">
+                <div class="form-group">
+                    <label>Название:</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Авторы (через запятую):</label>
+                    <input type="text" name="authors" required>
+                </div>
+                <div class="form-group">
+                    <label>Содержание:</label>
+                    <textarea name="content" rows="6" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Теги (через запятую):</label>
+                    <input type="text" name="tags">
+                </div>
+                <button type="submit">Создать</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка списка авторов
+        fetch('/api/authors')
+            .then(response => response.json())
+            .then(authors => {
+                const select = document.getElementById('authorSelect');
+                authors.forEach(author => {
+                    const option = document.createElement('option');
+                    option.value = author;
+                    option.textContent = author;
+                    select.appendChild(option);
+                });
+            });
+
+        // Функция для отображения статей
+        function displayArticles(articles) {
+            const container = document.getElementById('articlesList');
+            container.innerHTML = '';
+            
+            articles.forEach((article, index) => {
+                const div = document.createElement('div');
+                div.className = 'article-item';
+                
+                const articleInfo = document.createElement('div');
+                articleInfo.className = 'article-info';
+                const date = new Date(article.publicationDate).toLocaleDateString('ru-RU');
+                articleInfo.innerHTML = `
+                    <h3>${index + 1}. ${article.title}</h3>
+                    <p>Авторы: ${article.authors.join(', ')}</p>
+                    <p>Дата публикации: ${date}</p>
+                    ${article.reviewCount ? `<p>Количество рецензий: ${article.reviewCount}</p>` : ''}
+                    ${article.averageRating ? `<p>Средний рейтинг: ${article.averageRating.toFixed(1)}</p>` : ''}
+                `;
+
+                const actions = document.createElement('div');
+                actions.className = 'article-actions';
+                actions.innerHTML = `
+                    <i class="fas fa-eye action-icon" title="Просмотреть" onclick="viewArticle('${article._id}')"></i>
+                    <i class="fas fa-trash action-icon" title="Удалить" onclick="deleteArticle('${article._id}')"></i>
+                `;
+
+                div.appendChild(articleInfo);
+                div.appendChild(actions);
+                container.appendChild(div);
+            });
+        }
+
+        // Функции для работы с модальным окном
+        const modal = document.getElementById('createArticleModal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+        const createArticleBtn = document.getElementById('createArticleBtn');
+
+        createArticleBtn.onclick = () => modal.style.display = "block";
+        closeBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Обработка формы создания статьи
+        document.getElementById('createArticleForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const articleData = {
+                title: formData.get('title'),
+                authors: formData.get('authors').split(',').map(a => a.trim()),
+                content: formData.get('content'),
+                tags: formData.get('tags').split(',').map(t => t.trim()),
+                reviews: []
+            };
+
+            try {
+                const response = await fetch('/api/articles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(articleData)
+                });
+                if (response.ok) {
+                    modal.style.display = "none";
+                    e.target.reset();
+                    loadAllArticles();
+                }
+            } catch (error) {
+                console.error('Ошибка при создании статьи:', error);
+            }
+        };
+
+        // Функции для работы со статьями
+        function viewArticle(id) {
+            window.location.href = `/article/${id}`;
+        }
+
+        async function deleteArticle(id) {
+            if (confirm('Вы уверены, что хотите удалить эту статью?')) {
+                try {
+                    const response = await fetch(`/api/articles/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        loadAllArticles();
+                    }
+                } catch (error) {
+                    console.error('Ошибка при удалении статьи:', error);
+                }
+            }
+        }
+
+        function loadAllArticles() {
+            fetch('/api/articles')
+                .then(response => response.json())
+                .then(articles => displayArticles(articles));
+        }
+
+        // Обработчики событий для кнопок
+        document.getElementById('listAllBtn').addEventListener('click', loadAllArticles);
+
+        document.getElementById('searchByTitleBtn').addEventListener('click', () => {
+            const searchQuery = document.getElementById('titleSearch').value;
+            fetch(`/api/articles/search?title=${encodeURIComponent(searchQuery)}`)
+                .then(response => response.json())
+                .then(articles => displayArticles(articles));
+        });
+
+        document.getElementById('searchByAuthorBtn').addEventListener('click', () => {
+            const selectedAuthor = document.getElementById('authorSelect').value;
+            if (selectedAuthor) {
+                fetch(`/api/articles/author/${encodeURIComponent(selectedAuthor)}`)
+                    .then(response => response.json())
+                    .then(articles => displayArticles(articles));
+            }
+        });
+
+        document.getElementById('topArticlesBtn').addEventListener('click', () => {
+            fetch('/api/articles/top')
+                .then(response => response.json())
+                .then(articles => displayArticles(articles));
+        });
+
+        document.getElementById('searchByDateBtn').addEventListener('click', () => {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            if (startDate && endDate) {
+                fetch(`/api/articles/date-range?startDate=${startDate}&endDate=${endDate}`)
+                    .then(response => response.json())
+                    .then(articles => displayArticles(articles));
+            } else {
+                alert('Пожалуйста, выберите обе даты');
+            }
+        });
+
+        // Загрузка статей при загрузке страницы
+        loadAllArticles();
+    </script>
+</body>
+</html>

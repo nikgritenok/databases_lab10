@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статья - Научный Журнал</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .article-content {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .reviews-section {
+            margin-top: 30px;
+        }
+        .review {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .tags {
+            margin: 10px 0;
+        }
+        .tag {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 2px;
+            background-color: #e0e0e0;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+        .back-button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .back-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-button">← Назад к списку</a>
+    
+    <h1><%= article.title %></h1>
+    
+    <div>
+        <strong>Авторы:</strong> <%= article.authors.join(', ') %>
+    </div>
+    
+    <div>
+        <strong>Дата публикации:</strong> <%= new Date(article.publicationDate).toLocaleDateString('ru-RU') %>
+    </div>
+    
+    <div class="tags">
+        <strong>Теги:</strong>
+        <% article.tags.forEach(function(tag) { %>
+            <span class="tag"><%= tag %></span>
+        <% }); %>
+    </div>
+    
+    <div class="article-content">
+        <%= article.content %>
+    </div>
+    
+    <div class="reviews-section">
+        <h2>Рецензии (<%= article.reviews.length %>)</h2>
+        <% if (article.reviews.length > 0) { %>
+            <% article.reviews.forEach(function(review) { %>
+                <div class="review">
+                    <strong><%= review.name %></strong>
+                    <div>Оценка: <%= review.rating %>/10</div>
+                    <div><%= review.message %></div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <p>Пока нет рецензий</p>
+        <% } %>
+    </div>
+</body>
+</html>
